@@ -1,0 +1,55 @@
+[
+    {
+        "name": "official",
+        "value": 1,
+        "alias": ""},{
+        "name": "wikia",
+        "value": 2,
+        "alias": ""},{
+        "name": "wikipedia",
+        "value": 3,
+        "alias": ""},{
+        "name": "facebook",
+        "value": 4,
+        "alias": ""},{
+        "name": "twitter",
+        "value": 5,
+        "alias": ""},{
+        "name": "twitch",
+        "value": 6,
+        "alias": ""},{
+        "name": "instagram",
+        "value": 8,
+        "alias": ""},{
+        "name": "youtube",
+        "value": 9,
+        "alias": ""},{
+        "name": "iphone",
+        "value": 10,
+        "alias": ""},{
+        "name": "ipad",
+        "value": 11,
+        "alias": ""},{
+        "name": "android",
+        "value": 12,
+        "alias": ""},{
+        "name": "steam",
+        "value": 13,
+        "alias": "Steam"},{
+        "name": "reddit",
+        "value": 14,
+        "alias": ""},{
+        "name": "itch",
+        "value": 15,
+        "alias": ""},{
+        "name": "epicgames",
+        "value": 16,
+        "alias": "Epic Games Store"},{
+        "name": "gog",
+        "value": 17,
+        "alias": ""},{
+        "name": "discord",
+        "value": 18,
+        "alias": ""},{
+    }
+]
