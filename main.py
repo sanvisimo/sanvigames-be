@@ -1,3 +1,5 @@
+import sys
+
 import requests
 from csv import DictReader
 from ast import literal_eval
@@ -11,7 +13,8 @@ from html import escape
 from howlongtobeatpy import HowLongToBeat
 from hltb import hltb
 from base import Session, engine, Base
-from schema import User, Game
+from schema import User, Game, Genre, UserGames, Platform, Perspective, Website
+from sqlalchemy.dialects.postgresql import insert
 
 Base.metadata.create_all(engine)
 session = Session()
@@ -21,8 +24,8 @@ headers = {
     "Authorization": "Bearer aawj8q3mvcedzzzd9zh9ciu531qtue"
 }
 
-
 user_id = '625aed40c46cda3ded989a0f'
+
 
 # body = 'fields name,aggregated_rating,aggregated_rating_count,total_rating,total_rating_count,cover.*,genres.name,player_perspectives.name,themes.name,platforms.name,slug,summary,storyline,websites.category,websites.url,url,similar_games,version_parent,version_title;where name ~ *"mass effect legendary"*;'
 #
@@ -41,11 +44,11 @@ def get_howlongtobeat_infos(search):
     if result:
         return {
             "howlongtobeat_url": result[0].game_web_link,
-            "howlongtobeat_main": result[0].gameplay_main.replace("½", ".5"),
+            "howlongtobeat_main": result[0].gameplay_main.replace("½", ".5") if type(result[0].gameplay_main) == 'string' else result[0].gameplay_main,
             "howlongtobeat_main_unit": result[0].gameplay_main_unit,
-            "howlongtobeat_main_extra": result[0].gameplay_main_extra.replace("½", ".5"),
+            "howlongtobeat_main_extra": result[0].gameplay_main_extra.replace("½", ".5") if type(result[0].gameplay_main_extra) == 'string' else result[0].gameplay_main_extra,
             "howlongtobeat_main_extra_unit": result[0].gameplay_main_extra_unit,
-            "howlongtobeat_completionist": result[0].gameplay_completionist.replace("½", ".5"),
+            "howlongtobeat_completionist": result[0].gameplay_completionist.replace("½", ".5") if type(result[0].gameplay_completionist) == 'string' else result[0].gameplay_completionist,
             "howlongtobeat_completionist_unit": result[0].gameplay_completionist_unit,
         }
     return None
@@ -67,6 +70,8 @@ titleReplaceList = [
 
 delimeter = '\t'
 
+webs = ['official', 'wikia', 'wikipedia', 'facebook', 'twitter', 'twitch', '', 'instagram', 'youtube', 'iphone', 'ipad',
+        'android', 'steam', 'reddit', 'itch', 'epicgames', 'gog', 'discord']
 
 # graphql_headers = {
 #     'content-type': 'application/json',
@@ -87,31 +92,93 @@ delimeter = '\t'
 user = session.query(User).filter(User.name == 'Simone').first()
 pprint(user.name)
 
-with open('./gameDB.csv', 'r', encoding='utf-8', newline='') as csvfile:
+with open('./gameDB_py.csv', 'r', encoding='utf-8', newline='') as csvfile:
     for row in DictReader(csvfile, delimiter='\t'):
         # Fix common problems with titles
         for i in titleReplaceList:
             row['title'] = clean(re.sub(i[0], i[1], row['title']))
         pprint(row['title'])
+        plist = literal_eval(row['platformList']) if row['platformList'] else []
 
-        body = 'fields name,aggregated_rating,aggregated_rating_count,total_rating,total_rating_count,cover.*,genres.name,player_perspectives.name,themes.name,platforms.name,slug,summary,storyline,websites.category,websites.url,url,similar_games,version_parent,version_title;where name = "%s";' % \
+        body = 'fields name,aggregated_rating,aggregated_rating_count,total_rating,total_rating_count,cover.*,genres.name,genres.slug,player_perspectives.name,player_perspectives.slug,themes.name,platforms.name,platforms.slug,platforms.platform_logo.url,slug,summary,storyline,websites.category,websites.url,url,similar_games,version_parent,version_title;where name = "%s";' % \
                row['title']
         response = requests.post("https://api.igdb.com/v4/games", data=body.encode('utf-8'), headers=headers)
         game = response.json()
 
+        pprint(game)
+        # sys.exit('die')
+
         if len(game) == 1:
+            game_db = session.query(Game).filter(Game.igdb_id == game[0]['id']).first()
+
+            if game_db:
+                pprint('salto')
+                if game_db.users:
+                    for game_user in game_db.users:
+                        if game_user.user_id != user.id and game_user.game_id != game_db.id:
+                            user_game = UserGames(user=user, game=game_db, platforms=plist)
+                            session.add(user_game)
+                else:
+                    user_game = UserGames(user=user, game=game_db, platforms=plist)
+                    session.add(user_game)
+                continue
+
             game[0]['igdb_id'] = game[0]['id']
+
             pprint(game[0]['igdb_id'])
             # game[0]['platform_list'] = literal_eval(row['platformList']) if row['platformList'] else []
             del game[0]['id']
             howlongtobeat_infos = get_howlongtobeat_infos(game[0]['name'])
 
+            game[0]['aggregated_rating'] = game[0]['aggregated_rating'] if 'aggregated_rating' in game[0].keys() else None
+            game[0]['aggregated_rating_count'] = game[0]['aggregated_rating_count'] if 'aggregated_rating_count' in game[0].keys() else None
+            game[0]['total_rating'] = game[0]['total_rating'] if 'total_rating' in game[0].keys() else None
+            game[0]['total_rating_count'] = game[0]['total_rating_count'] if 'total_rating_count' in game[0].keys() else None
             game[0]['howlongtobeat_rating'] = hltb(howlongtobeat_infos['howlongtobeat_url'])
             game[0]['howlongtobeat_infos'] = howlongtobeat_infos
-            # pprint(game[0])
+            # pprint(game[0]['howlongtobeat_infos'])
 
-            game_db = Game(game[0]['igdb_id'], game[0]['name'], game[0]['slug'], game[0]['summary'])
-            game_db.users = [user]
+            game_db = Game(**game[0])
+            genres = []
+            for genre in game[0]['genres']:
+                gen = session.query(Genre).filter(Genre.id == genre['id']).first()
+                if not gen:
+                    gen = Genre(**genre)
+                    session.add(gen)
+                genres.append(gen)
+
+            platforms = []
+            for platform in game[0]['platforms']:
+                plat = session.query(Platform).filter(Platform.id == platform['id']).first()
+                platform['logo'] = platform['platform_logo']['url']
+                if not plat:
+                    plat = Platform(**platform)
+                    session.add(plat)
+                platforms.append(plat)
+
+            perspectives = []
+            for perspective in game[0]['player_perspectives']:
+                perp = session.query(Perspective).filter(Perspective.id == perspective['id']).first()
+                if not perp:
+                    perp = Perspective(**perspective)
+                    session.add(perp)
+                perspectives.append(perp)
+
+            websites = []
+            for website in game[0]['websites']:
+                index = int(website['category']) - 1
+                website['category'] = webs[index]
+                web = Website(**website)
+                web.game = game_db
+                session.add(web)
+                websites.append(web)
+
+            game_db.genres = genres
+            game_db.platforms = platforms
+            game_db.perspectives = perspectives
+            game_db.websites = websites
+            user_game = UserGames(user=user, game=game_db, platforms=plist)
+            session.add(user_game)
             session.add(game_db)
 
             # db.games.update_one({'name': game[0]['name']}, {'$set': game[0]}, upsert=True)
