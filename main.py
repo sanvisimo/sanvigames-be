@@ -5,8 +5,6 @@ from csv import DictReader
 from ast import literal_eval
 
 import re
-import json
-from pymongo import MongoClient
 # pprint library is used to make the output look more pretty
 from pprint import pprint
 from html import escape
@@ -39,18 +37,22 @@ def clean(s, bPurge=True):
     return escape(s) if bPurge else s
 
 
-def get_howlongtobeat_infos(search):
-    result = HowLongToBeat().search(search)
-    if result:
-        return {
-            "howlongtobeat_url": result[0].game_web_link,
-            "howlongtobeat_main": float(str(result[0].gameplay_main).replace("½", ".5")),
-            "howlongtobeat_main_unit": result[0].gameplay_main_unit,
-            "howlongtobeat_main_extra": float(str(result[0].gameplay_main_extra).replace("½", ".5")),
-            "howlongtobeat_main_extra_unit": result[0].gameplay_main_extra_unit,
-            "howlongtobeat_completionist": float(str(result[0].gameplay_completionist).replace("½", ".5")),
-            "howlongtobeat_completionist_unit": result[0].gameplay_completionist_unit,
-        }
+async def get_howlongtobeat_infos(search):
+    pprint('how long to beat')
+    result = await HowLongToBeat().async_search(search)
+    pprint()
+    pprint(result)
+    pprint()
+    # if result:
+    #     return {
+    #         "howlongtobeat_url": result[0].game_web_link,
+    #         "howlongtobeat_main": float(str(result[0].gameplay_main).replace("½", ".5")),
+    #         "howlongtobeat_main_unit": result[0].gameplay_main_unit,
+    #         "howlongtobeat_main_extra": float(str(result[0].gameplay_main_extra).replace("½", ".5")),
+    #         "howlongtobeat_main_extra_unit": result[0].gameplay_main_extra_unit,
+    #         "howlongtobeat_completionist": float(str(result[0].gameplay_completionist).replace("½", ".5")),
+    #         "howlongtobeat_completionist_unit": result[0].gameplay_completionist_unit,
+    #     }
     return None
 
 
@@ -89,15 +91,18 @@ webs = ['official', 'wikia', 'wikipedia', 'facebook', 'twitter', 'twitch', '', '
 # pprint(p.json())
 
 
+res = HowLongToBeat().search('NBA')
+pprint(res)
+sys.exit()
+
 user = session.query(User).filter(User.name == 'Simone').first()
 pprint(user.name)
 
-with open('./gameDB_py.csv', 'r', encoding='utf-8', newline='') as csvfile:
+with open('./test.csv', 'r', encoding='utf-8', newline='') as csvfile:
     for row in DictReader(csvfile, delimiter='\t'):
         # Fix common problems with titles
         for i in titleReplaceList:
             row['title'] = clean(re.sub(i[0], i[1], row['title']))
-        pprint(row['title'])
         plist = literal_eval(row['platformList']) if row['platformList'] else []
 
         body = 'fields name,aggregated_rating,aggregated_rating_count,total_rating,total_rating_count,cover.*,genres.name,genres.slug,player_perspectives.name,player_perspectives.slug,themes.name,platforms.name,platforms.slug,platforms.platform_logo.url,slug,summary,storyline,websites.category,websites.url,url,similar_games,version_parent,version_title;where name = "%s";' % \
@@ -105,8 +110,7 @@ with open('./gameDB_py.csv', 'r', encoding='utf-8', newline='') as csvfile:
         response = requests.post("https://api.igdb.com/v4/games", data=body.encode('utf-8'), headers=headers)
         game = response.json()
 
-        pprint(game)
-        # sys.exit('die')
+        # pprint(game)
 
         if len(game) == 1:
             game_db = session.query(Game).filter(Game.igdb_id == game[0]['id']).first()
@@ -124,18 +128,19 @@ with open('./gameDB_py.csv', 'r', encoding='utf-8', newline='') as csvfile:
                 continue
 
             game[0]['igdb_id'] = game[0]['id']
-
+            pprint(game[0]['name'])
             pprint(game[0]['igdb_id'])
             # game[0]['platform_list'] = literal_eval(row['platformList']) if row['platformList'] else []
             del game[0]['id']
             howlongtobeat_infos = get_howlongtobeat_infos(game[0]['name'])
+            sys.exit()
 
             game[0]['aggregated_rating'] = game[0]['aggregated_rating'] if 'aggregated_rating' in game[0].keys() else None
             game[0]['aggregated_rating_count'] = game[0]['aggregated_rating_count'] if 'aggregated_rating_count' in game[0].keys() else None
             game[0]['total_rating'] = game[0]['total_rating'] if 'total_rating' in game[0].keys() else None
             game[0]['total_rating_count'] = game[0]['total_rating_count'] if 'total_rating_count' in game[0].keys() else None
-            game[0]['howlongtobeat_rating'] = hltb(howlongtobeat_infos['howlongtobeat_url'])
-            game[0]['howlongtobeat_infos'] = howlongtobeat_infos
+            # game[0]['howlongtobeat_rating'] = hltb(howlongtobeat_infos['howlongtobeat_url'])
+            # game[0]['howlongtobeat_infos'] = howlongtobeat_infos
             # pprint(game[0]['howlongtobeat_infos'])
 
             game_db = Game(**game[0])
