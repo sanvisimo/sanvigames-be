@@ -44,11 +44,11 @@ def get_howlongtobeat_infos(search):
     if result:
         return {
             "howlongtobeat_url": result[0].game_web_link,
-            "howlongtobeat_main": result[0].gameplay_main.replace("½", ".5") if type(result[0].gameplay_main) == 'string' else result[0].gameplay_main,
+            "howlongtobeat_main": float(str(result[0].gameplay_main).replace("½", ".5")),
             "howlongtobeat_main_unit": result[0].gameplay_main_unit,
-            "howlongtobeat_main_extra": result[0].gameplay_main_extra.replace("½", ".5") if type(result[0].gameplay_main_extra) == 'string' else result[0].gameplay_main_extra,
+            "howlongtobeat_main_extra": float(str(result[0].gameplay_main_extra).replace("½", ".5")),
             "howlongtobeat_main_extra_unit": result[0].gameplay_main_extra_unit,
-            "howlongtobeat_completionist": result[0].gameplay_completionist.replace("½", ".5") if type(result[0].gameplay_completionist) == 'string' else result[0].gameplay_completionist,
+            "howlongtobeat_completionist": float(str(result[0].gameplay_completionist).replace("½", ".5")),
             "howlongtobeat_completionist_unit": result[0].gameplay_completionist_unit,
         }
     return None
