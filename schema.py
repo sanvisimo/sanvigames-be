@@ -39,16 +39,16 @@ class Game(Base):
     igdb_id = Column(Integer, nullable=False, unique=True)
     name = Column(String, nullable=False)
     slug = Column(String)
-    summary = Column(String)
-    similar_games = Column(ARRAY(Integer))
-    url = Column(String)
-    cover = Column(JSON)
-    aggregated_rating = Column(Float)
-    aggregated_rating_count = Column(Integer)
-    total_rating = Column(Float)
-    total_rating_count = Column(Integer)
-    howlongtobeat_rating = Column(Integer)
-    howlongtobeat_infos = Column(JSON)
+    summary = Column(String, nullable=True)
+    similar_games = Column(ARRAY(Integer), nullable=True)
+    url = Column(String, nullable=True)
+    cover = Column(JSON, nullable=True)
+    aggregated_rating = Column(Float, nullable=True)
+    aggregated_rating_count = Column(Integer, nullable=True)
+    total_rating = Column(Float, nullable=True)
+    total_rating_count = Column(Integer, nullable=True)
+    howlongtobeat_rating = Column(Integer, nullable=True)
+    howlongtobeat_infos = Column(JSON, nullable=True)
     websites = relationship('Website')
     genres = relationship('Genre', secondary=genres_games, backref='games')
     platforms = relationship('Platform', secondary=platforms_games, backref='games')
@@ -59,10 +59,10 @@ class Game(Base):
         self.igdb_id = kwargs['igdb_id']
         self.name = kwargs['name']
         self.slug = kwargs['slug']
-        self.summary = kwargs['summary']
-        self.similar_games = kwargs['similar_games']
-        self.url = kwargs['url']
-        self.cover = kwargs['cover']
+        self.summary = kwargs['summary'] if 'summary' in kwargs else None
+        self.similar_games = kwargs['similar_games'] if 'similar_games' in kwargs else None
+        self.url = kwargs['url'] if 'url' in kwargs else None
+        self.cover = kwargs['cover'] if 'cover' in kwargs else None
         self.aggregated_rating = kwargs['aggregated_rating']
         self.aggregated_rating_count = kwargs['aggregated_rating_count']
         self.total_rating = kwargs['total_rating']
@@ -97,7 +97,7 @@ class Platform(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     slug = Column(String, nullable=False)
-    logo = Column(String)
+    logo = Column(String, nullable=True)
 
     def __init__(self, **kwargs):
         self.id = kwargs['id']

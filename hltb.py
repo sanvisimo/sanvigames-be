@@ -8,8 +8,7 @@ def hltb(url):
     soup = BeautifulSoup(page.content, "html.parser")
 
     results = soup.find_all(text=re.compile('Rating'))
-
-    return results[0].replace('% Rating', '')
+    return results[0].replace('% Rating', '') if results[0] != 'NR Rating' else None
 
 
 if __name__ == "__main__":
