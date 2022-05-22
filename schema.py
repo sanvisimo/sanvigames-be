@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Table, Float
+from sqlalchemy import Column, ForeignKey, Integer, String, Table, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, ENUM
 from base import Base
@@ -24,6 +24,9 @@ perspectives_games = Table(
     Column('perspective_id', ForeignKey('perspectives.id'), primary_key=True)
 )
 
+webs = ['official', 'wikia', 'wikipedia', 'facebook', 'twitter', 'twitch', '', 'instagram', 'youtube', 'iphone', 'ipad',
+        'android', 'steam', 'reddit', 'itch', 'epicgames', 'gog', 'discord']
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -37,17 +40,19 @@ class Game(Base):
     __tablename__ = 'games'
     id = Column(Integer, primary_key=True, autoincrement=True)
     igdb_id = Column(Integer, nullable=False, unique=True)
-    name = Column(String, nullable=False)
+    title = Column(String, nullable=False)
     slug = Column(String)
     summary = Column(String, nullable=True)
     similar_games = Column(ARRAY(Integer), nullable=True)
+    release_date = Column(Date, nullable=True)
     url = Column(String, nullable=True)
-    cover = Column(JSON, nullable=True)
-    aggregated_rating = Column(Float, nullable=True)
-    aggregated_rating_count = Column(Integer, nullable=True)
-    total_rating = Column(Float, nullable=True)
-    total_rating_count = Column(Integer, nullable=True)
-    howlongtobeat_rating = Column(Integer, nullable=True)
+    storyline = Column(String, nullable=True)
+    cover = Column(String, nullable=True)
+    igdb_cover = Column(String, nullable=True)
+    background = Column(String, nullable=True)
+    rating = Column(Float, nullable=True)
+    critic = Column(Float, nullable=True)
+    duration = Column(Float, nullable=True)
     howlongtobeat_infos = Column(JSON, nullable=True)
     websites = relationship('Website')
     genres = relationship('Genre', secondary=genres_games, backref='games')
@@ -57,18 +62,20 @@ class Game(Base):
 
     def __init__(self, **kwargs):
         self.igdb_id = kwargs['igdb_id']
-        self.name = kwargs['name']
+        self.title = kwargs['title']
         self.slug = kwargs['slug']
-        self.summary = kwargs['summary'] if 'summary' in kwargs else None
-        self.similar_games = kwargs['similar_games'] if 'similar_games' in kwargs else None
-        self.url = kwargs['url'] if 'url' in kwargs else None
-        self.cover = kwargs['cover'] if 'cover' in kwargs else None
-        self.aggregated_rating = kwargs['aggregated_rating']
-        self.aggregated_rating_count = kwargs['aggregated_rating_count']
-        self.total_rating = kwargs['total_rating']
-        self.total_rating_count = kwargs['total_rating_count']
-        self.howlongtobeat_rating = kwargs['howlongtobeat_rating']
+        self.summary = kwargs['summary']
+        self.similar_games = kwargs['similar_games']
+        self.url = kwargs['url']
+        self.cover = kwargs['cover']
+        self.igdb_cover = kwargs['igdb_cover']
+        self.rating = kwargs['rating']
+        self.critic = kwargs['critic']
+        self.storyline = kwargs['storyline']
+        self.background = kwargs['background']
+        self.release_date = kwargs['release_date']
         self.howlongtobeat_infos = kwargs['howlongtobeat_infos']
+        self.duration = kwargs['duration']
 
 
 class UserGames(Base):
@@ -103,7 +110,7 @@ class Platform(Base):
         self.id = kwargs['id']
         self.name = kwargs['name']
         self.slug = kwargs['slug']
-        self.logo = kwargs['logo']
+        self.logo = kwargs['platform_logo']['url'] if 'platform_logo' in kwargs else None
 
 
 class Perspective(Base):
@@ -130,4 +137,5 @@ class Website(Base):
     def __init__(self, **kwargs):
         self.id = kwargs['id']
         self.url = kwargs['url']
-        self.category = kwargs['category']
+        index = int(kwargs['category']) - 1
+        self.category = webs[index]
